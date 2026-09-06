@@ -10,7 +10,7 @@ CareIntake combines a real Vapi phone agent, Groq GPT-OSS 120B, a validated Fast
 
 Deployment and telephone verification results are recorded in [docs/submission.md](docs/submission.md). Reviewer credentials are shared separately, never committed.
 
-- Repository: https://github.com/salogamer2002/careintake-ai
+- Repository: https://github.com/sallujerry217-code/careintake-ai
 - API / Dashboard: https://careintake-production.up.railway.app
 - U.S. Phone Number: **+1 (732) 707-9442**
 
@@ -67,7 +67,7 @@ railway.toml         deployment and health configuration
 Prerequisite: Docker Engine/Compose running.
 
 ```bash
-git clone https://github.com/salogamer2002/careintake-ai.git
+git clone https://github.com/sallujerry217-code/careintake-ai.git
 cd careintake-ai
 docker compose up --build
 ```

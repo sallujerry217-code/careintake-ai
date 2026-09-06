@@ -4,11 +4,15 @@
 
 | Item | Value |
 |---|---|
-| **Repository** | https://github.com/salogamer2002/careintake-ai |
+| **Repository** | https://github.com/sallujerry217-code/careintake-ai |
 | **API Base URL** | https://careintake-production.up.railway.app |
 | **Dashboard URL** | https://careintake-production.up.railway.app/ |
 | **U.S. Phone Number** | +1 (732) 707-9442 |
 | **Voice Agent Name** | Riley (Vapi + Groq openai/gpt-oss-120b) |
+
+The public repository is now owned by `sallujerry217-code`; Railway remains live and connected to the transferred repository.
+
+Reviewer access key is shared separately. Use it as `Authorization: Bearer <key>` for protected REST endpoints or enter it in the dashboard. Use fictional patient information only.
 
 ## Reviewer Credentials
 
