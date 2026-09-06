@@ -123,6 +123,10 @@ def execute(db, name, args, call_id):
         if not patient_id:
             raise DomainError(422, 'VALIDATION_ERROR', 'Patient ID is required to schedule an appointment.')
         from .models import Appointment
+        from .schemas import AppointmentInput
+        linked_call = db.scalar(select(CallRecord).where(CallRecord.provider_call_id == call_id))
+        if not linked_call or linked_call.patient_id != patient_id or args.get('confirmed') is not True:
+            raise DomainError(403, 'BOOKING_CONFIRMATION_REQUIRED', 'Register this patient in this call and obtain explicit booking approval first.')
         get_patient(db, patient_id)
         preferred_date = args.get('preferred_date', '')
         preferred_time = args.get('preferred_time', '10:00 AM')
@@ -139,10 +143,11 @@ def execute(db, name, args, call_id):
             time_str = '10:00 AM'
         elif time_str.lower() in ('afternoon', 'pm'):
             time_str = '2:00 PM'
+        validated = AppointmentInput(patient_id=patient_id, appointment_date=preferred_date, appointment_time=time_str)
         appointment = Appointment(
             patient_id=patient_id,
-            appointment_date=preferred_date,
-            appointment_time=time_str,
+            appointment_date=validated.appointment_date,
+            appointment_time=validated.appointment_time,
             appointment_type=args.get('appointment_type', 'New Patient Visit'),
             provider_name='Dr. Sarah Chen',
             location='CareIntake Health Center, 7 Clyde Road, Somerset NJ 08873',

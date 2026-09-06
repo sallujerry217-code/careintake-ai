@@ -105,3 +105,16 @@ def test_database_failure_never_claims_success(client,patient,monkeypatch):
     r=save(client,token)
     assert not r['saved'] and r['error']['code']=='SAVE_FAILED'
     assert client.get('/patients').json()['data']==[]
+
+
+def test_booking_requires_this_call_registration_and_consent(client,patient):
+    p=client.post('/patients',json=patient).json()['data']
+    r=tool(client,'schedule_appointment',{'patient_id':p['patient_id'],'preferred_date':'2099-01-01','confirmed':True})
+    assert r['error']['code']=='BOOKING_CONFIRMATION_REQUIRED'
+
+
+def test_booking_rejects_past_date(client,patient):
+    token=prepare(client,patient)
+    p=save(client,token)
+    r=tool(client,'schedule_appointment',{'patient_id':p['patient_id'],'preferred_date':'2000-01-01','preferred_time':'10:00 AM','confirmed':True})
+    assert r['error']['code']=='VALIDATION_ERROR'

@@ -44,11 +44,11 @@ def _seed_demo_data():
         if db.scalar(select(func.count()).select_from(Patient)) > 0:
             return
         seeds = [
-            Patient(first_name='Jane', last_name='Doe', date_of_birth='1990-03-15',
+            Patient(first_name='Jane', last_name='Doe', date_of_birth=date(1990,3,15),
                     sex='Female', phone_number='2125550100', address_line_1='42 Elm Street',
                     city='New York', state='NY', zip_code='10001',
                     email='jane.doe@example.com', preferred_language='English'),
-            Patient(first_name='Alex', last_name='Rivera', date_of_birth='1985-11-22',
+            Patient(first_name='Alex', last_name='Rivera', date_of_birth=date(1985,11,22),
                     sex='Male', phone_number='3105550200', address_line_1='789 Sunset Blvd',
                     address_line_2='Apt 4B', city='Los Angeles', state='CA', zip_code='90028',
                     insurance_provider='Blue Cross Blue Shield', insurance_member_id='BCX987654',
