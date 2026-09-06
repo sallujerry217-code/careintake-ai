@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: careintake
+      POSTGRES_PASSWORD: local-demo-password
+      POSTGRES_DB: careintake
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careintake"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://careintake:local-demo-password@db:5432/careintake
+      APP_ENV: development
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      VAPI_SECRET: ${VAPI_SECRET:-local-demo-webhook-secret}
+      SIGNING_SECRET: ${SIGNING_SECRET:-local-demo-signing-secret-change-me-32}
+      CORS_ORIGINS: http://localhost:8000
+      PHONE_NUMBER: ${PHONE_NUMBER:-}
+      VAPI_ASSISTANT_ID: ${VAPI_ASSISTANT_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
