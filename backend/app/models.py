@@ -69,3 +69,18 @@ class ToolReceipt(Base):
     key: Mapped[str] = mapped_column(String(310), primary_key=True)
     result: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Appointment(Base):
+    """Bonus: mock appointment scheduling after registration."""
+    __tablename__ = 'appointments'
+    appointment_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    patient_id: Mapped[str] = mapped_column(ForeignKey('patients.patient_id'))
+    appointment_date: Mapped[date] = mapped_column(Date)
+    appointment_time: Mapped[str] = mapped_column(String(20))
+    appointment_type: Mapped[str] = mapped_column(String(100), default='New Patient Visit')
+    provider_name: Mapped[str] = mapped_column(String(150), default='Dr. Sarah Chen')
+    location: Mapped[str] = mapped_column(String(200), default='CareIntake Health Center, 7 Clyde Road, Somerset NJ 08873')
+    status: Mapped[str] = mapped_column(String(40), default='scheduled')
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

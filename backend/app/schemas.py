@@ -112,3 +112,23 @@ class PatientOut(PatientInput):
     @classmethod
     def utc(cls, v):
         return v.replace(tzinfo=timezone.utc) if v and v.tzinfo is None else v
+
+
+class AppointmentInput(BaseModel):
+    """Bonus: appointment scheduling schema."""
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    patient_id: str
+    appointment_date: date
+    appointment_time: str = Field(min_length=1, max_length=20)
+    appointment_type: str = Field(default='New Patient Visit', max_length=100)
+    provider_name: str = Field(default='Dr. Sarah Chen', max_length=150)
+    location: str = Field(default='CareIntake Health Center, 7 Clyde Road, Somerset NJ 08873', max_length=200)
+    notes: str | None = Field(default=None, max_length=500)
+
+    @field_validator('appointment_date')
+    @classmethod
+    def future_date(cls, v):
+        if v < datetime.now(timezone.utc).date():
+            raise ValueError('Appointment date must be today or in the future.')
+        return v
+

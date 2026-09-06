@@ -11,8 +11,8 @@ CareIntake combines a real Vapi phone agent, Groq GPT-OSS 120B, a validated Fast
 Deployment and telephone verification results are recorded in [docs/submission.md](docs/submission.md). Reviewer credentials are shared separately, never committed.
 
 - Repository: https://github.com/salogamer2002/careintake-ai
-- API / dashboard: deployment in progress; see submission notes for final status.
-- U.S. number: provisioning in progress; see submission notes for final status.
+- API / Dashboard: https://careintake-production.up.railway.app
+- U.S. Phone Number: **+1 (732) 707-9442**
 
 ## Architecture
 

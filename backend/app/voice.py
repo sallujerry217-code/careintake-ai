@@ -117,6 +117,48 @@ def execute(db, name, args, call_id):
             import logging
             logging.getLogger('careintake').info('voice.confirmed_payload', extra={'payload': data.model_dump(mode='json')})
         return result
+    if name == 'schedule_appointment':
+        # Bonus: mock appointment scheduling after successful registration
+        patient_id = args.get('patient_id')
+        if not patient_id:
+            raise DomainError(422, 'VALIDATION_ERROR', 'Patient ID is required to schedule an appointment.')
+        from .models import Appointment
+        get_patient(db, patient_id)
+        preferred_date = args.get('preferred_date', '')
+        preferred_time = args.get('preferred_time', '10:00 AM')
+        if not preferred_date:
+            from datetime import timedelta as td
+            import datetime as dt
+            next_business = now().date() + td(days=1)
+            while next_business.weekday() >= 5:
+                next_business += td(days=1)
+            preferred_date = next_business.isoformat()
+        # Normalize time
+        time_str = preferred_time.strip()
+        if time_str.lower() in ('morning', 'am'):
+            time_str = '10:00 AM'
+        elif time_str.lower() in ('afternoon', 'pm'):
+            time_str = '2:00 PM'
+        appointment = Appointment(
+            patient_id=patient_id,
+            appointment_date=preferred_date,
+            appointment_time=time_str,
+            appointment_type=args.get('appointment_type', 'New Patient Visit'),
+            provider_name='Dr. Sarah Chen',
+            location='CareIntake Health Center, 7 Clyde Road, Somerset NJ 08873',
+            notes=args.get('notes'),
+        )
+        db.add(appointment)
+        db.flush()
+        return {
+            'scheduled': True,
+            'appointment_id': appointment.appointment_id,
+            'date': str(appointment.appointment_date),
+            'time': appointment.appointment_time,
+            'type': appointment.appointment_type,
+            'provider': appointment.provider_name,
+            'location': appointment.location,
+        }
     raise DomainError(400, 'UNKNOWN_TOOL', 'Unknown tool requested.')
 
 

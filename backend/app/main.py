@@ -17,8 +17,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette.exceptions import HTTPException
 from .config import settings
 from .db import Base, engine, get_db
-from .models import Patient, CallRecord, now
-from .schemas import PatientInput, phone, dob
+from .models import Patient, CallRecord, Appointment, now
+from .schemas import PatientInput, AppointmentInput, phone, dob
 from .services import DomainError, get_patient, create_patient, update_patient, output
 from .voice import handle_tools, end_report, validation_details
 
@@ -37,9 +37,33 @@ logger.handlers = [handler]
 logger.setLevel(cfg.log_level)
 logger.propagate = False
 
+def _seed_demo_data():
+    """Insert two fictional demonstration patients if the database is empty."""
+    from sqlalchemy.orm import Session as SeedSession
+    with SeedSession(engine) as db:
+        if db.scalar(select(func.count()).select_from(Patient)) > 0:
+            return
+        seeds = [
+            Patient(first_name='Jane', last_name='Doe', date_of_birth='1990-03-15',
+                    sex='Female', phone_number='2125550100', address_line_1='42 Elm Street',
+                    city='New York', state='NY', zip_code='10001',
+                    email='jane.doe@example.com', preferred_language='English'),
+            Patient(first_name='Alex', last_name='Rivera', date_of_birth='1985-11-22',
+                    sex='Male', phone_number='3105550200', address_line_1='789 Sunset Blvd',
+                    address_line_2='Apt 4B', city='Los Angeles', state='CA', zip_code='90028',
+                    insurance_provider='Blue Cross Blue Shield', insurance_member_id='BCX987654',
+                    emergency_contact_name='Maria Rivera', emergency_contact_phone='3105550201',
+                    preferred_language='English'),
+        ]
+        for p in seeds:
+            db.add(p)
+        db.commit()
+        logger.info('seed.demo_patients_inserted', extra={'payload': f'{len(seeds)} demo patients'})
+
 @asynccontextmanager
 async def lifespan(app):
     Base.metadata.create_all(engine)
+    _seed_demo_data()
     yield
 
 app = FastAPI(title='CareIntake AI', version='1.0.0', description='Voice patient registration demo. Use fictional data only.', lifespan=lifespan)
@@ -198,6 +222,51 @@ def vapi_webhook(payload: dict, db=Depends(get_db)):
     if message.get('type') == 'end-of-call-report':
         return end_report(db, message)
     return ok({'received':True, 'ignored':True})
+
+# ─── Bonus: Appointment scheduling ────────────────────────────────────────────
+
+def serialize_appointment(a):
+    data = {key: getattr(a, key) for key in ['appointment_id','patient_id','appointment_date','appointment_time','appointment_type','provider_name','location','status','notes','created_at']}
+    for key, value in data.items():
+        if isinstance(value, datetime) and value.tzinfo is None:
+            data[key] = value.replace(tzinfo=timezone.utc)
+        elif isinstance(value, date) and not isinstance(value, datetime):
+            data[key] = value.isoformat()
+    return data
+
+@app.get('/appointments', dependencies=[Depends(admin)])
+def list_appointments(patient_id: str | None = None, limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), db=Depends(get_db)):
+    stmt = select(Appointment).order_by(Appointment.appointment_date.desc())
+    if patient_id:
+        stmt = stmt.where(Appointment.patient_id == patient_id)
+    total = db.scalar(select(func.count()).select_from(stmt.subquery()))
+    rows = db.scalars(stmt.offset(offset).limit(limit)).all()
+    return {**ok([serialize_appointment(a) for a in rows]), 'meta': {'total': total, 'limit': limit, 'offset': offset}}
+
+@app.get('/appointments/{appointment_id}', dependencies=[Depends(admin)])
+def get_appointment(appointment_id: UUID, db=Depends(get_db)):
+    a = db.get(Appointment, str(appointment_id))
+    if not a:
+        raise DomainError(404, 'NOT_FOUND', 'Appointment not found.')
+    return ok(serialize_appointment(a))
+
+@app.post('/appointments', status_code=201, dependencies=[Depends(admin)])
+def post_appointment(data: AppointmentInput, db=Depends(get_db)):
+    get_patient(db, data.patient_id)
+    a = Appointment(**data.model_dump())
+    db.add(a)
+    db.commit()
+    logger.info('appointment.created', extra={'patient_id': data.patient_id})
+    return ok(serialize_appointment(a))
+
+@app.delete('/appointments/{appointment_id}', dependencies=[Depends(admin)])
+def cancel_appointment(appointment_id: UUID, db=Depends(get_db)):
+    a = db.get(Appointment, str(appointment_id))
+    if not a:
+        raise DomainError(404, 'NOT_FOUND', 'Appointment not found.')
+    a.status = 'cancelled'
+    db.commit()
+    return ok(serialize_appointment(a))
 
 static = Path(cfg.static_dir)
 if static.exists():
